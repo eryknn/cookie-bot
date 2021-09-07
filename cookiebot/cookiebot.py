@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from selenium.common.exceptions import InvalidArgumentException, ElementClickInterceptedException
 from selenium.webdriver import Chrome, ActionChains
@@ -8,14 +8,20 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 
 class CookieBot(Chrome):
+    upgrade_check_delta = 60 * 10  # 10 minutes
+    building_check_delta = 60  # 1 minute
 
     def __init__(self, teardown=False, save_dir=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.implicitly_wait(5)
         if not save_dir:
             raise InvalidArgumentException("Save directory mus be provided")
+        self.running = False
         self.save_dir = save_dir
         self.teardown = teardown
+        self.upgrade_next_check = datetime.now()
+        self.building_next_check = datetime.now()
+        self.save_next_check = datetime.now() + timedelta(minutes=5)
 
     def __exit__(self, *args):
         self.__create_save()
@@ -28,8 +34,36 @@ class CookieBot(Chrome):
         self.__load_save()
         self.__initialize_elements()
 
-        for _ in range(400):
+        self.running = True
+
+        while self.running:
+            self.__check_for_buildings()
+            self.__check_for_upgrades()
+            self.__check_for_popups()
             self.__click_main_cookie()
+            self.__check_for_save()
+
+        print("Finished running!")
+
+    def __check_for_buildings(self):
+        if datetime.now() < self.building_next_check:
+            return
+
+        # find the most expensive thing that can be bought and buy it, do it until there is no money left to buy
+        while affordable_buildings := self.find_elements_by_css_selector('.product.unlocked.enabled'):
+            affordable_buildings.sort(
+                key=lambda product: int(product.find_element_by_css_selector('span.price').text.replace(',', ''))
+            )
+            affordable_buildings[-1].click()
+
+        self.building_next_check = datetime.now() + timedelta(seconds=self.building_check_delta)
+
+    def __check_for_upgrades(self):
+        if datetime.now() < self.upgrade_next_check:
+            return
+
+    def __check_for_popups(self):
+        pass
 
     def __accept_cc(self):
         """
@@ -70,12 +104,14 @@ class CookieBot(Chrome):
         with open(os.path.join(self.save_dir, datetime.now().isoformat()), 'w') as file:
             file.write(save_data)
 
+        # close save window
+        self.find_element_by_id('promptOption0').click()
+        # close options menu
+        self.find_element_by_css_selector('#menu>.close.menuClose').click()
+
     def __initialize_elements(self):
         # find and save all elements that will be accessed and will not disappear and reappear
         self._main_cookie = self.find_element_by_id('bigCookie')
-
-    def __click_main_cookie(self):
-        self._main_cookie.click()
 
     def __get_latest_save_data(self):
         # find latest save file if any
@@ -90,3 +126,13 @@ class CookieBot(Chrome):
 
             return save_data
         return None
+
+    def __click_main_cookie(self):
+        self._main_cookie.click()
+
+    def __check_for_save(self):
+        if datetime.now() < self.save_next_check:
+            return
+
+        self.__create_save()
+        self.save_next_check = datetime.now() + timedelta(minutes=5)
