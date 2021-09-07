@@ -162,3 +162,5 @@ cython_debug/
 
 ### project specific
 drivers/*
+saves/*
+conf_local.py
