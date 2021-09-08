@@ -1,6 +1,7 @@
 import logging
 import os
 from datetime import datetime, timedelta
+from time import sleep
 
 from selenium.common.exceptions import InvalidArgumentException, ElementClickInterceptedException
 from selenium.webdriver import Chrome, ActionChains
@@ -40,8 +41,8 @@ class CookieBot(Chrome):
         self.running = True
 
         while self.running:
-            self.__check_for_buildings()
             self.__check_for_upgrades()
+            self.__check_for_buildings()
             self.__check_for_popups()
             self.__click_main_cookie()
             self.__check_for_save()
@@ -66,6 +67,18 @@ class CookieBot(Chrome):
     def __check_for_upgrades(self):
         if datetime.now() < self.upgrade_next_check:
             return
+
+        # trigger jscript that shows whole upgrade list
+        upgrade_box = self.find_element_by_id('upgrades')
+        ActionChains(self).move_to_element_with_offset(
+            upgrade_box, 0, int(upgrade_box.value_of_css_property('padding-top').split('px')[0])
+        ).perform()
+
+        while _ := self.find_elements_by_css_selector('.crate.upgrade.enabled'):
+            self.find_element_by_id('upgrade0').click()
+            sleep(0.05)
+
+        self.upgrade_next_check = datetime.now() + timedelta(seconds=self.upgrade_check_delta)
 
     def __check_for_popups(self):
         pass
