@@ -12,7 +12,7 @@ from cookiebot.helpers import CookieMoneyHelper
 
 
 class CookieBot(Chrome):
-    upgrade_check_delta = 60 * 10  # 10 minutes
+    upgrade_check_delta = 30
     building_check_delta = 60  # 1 minute
 
     def __init__(self, teardown=False, save_dir=None, *args, **kwargs):
@@ -41,9 +41,9 @@ class CookieBot(Chrome):
         self.running = True
 
         while self.running:
+            self.__check_for_shimmers()
             self.__check_for_upgrades()
             self.__check_for_buildings()
-            self.__check_for_popups()
             self.__click_main_cookie()
             self.__check_for_save()
 
@@ -80,8 +80,9 @@ class CookieBot(Chrome):
 
         self.upgrade_next_check = datetime.now() + timedelta(seconds=self.upgrade_check_delta)
 
-    def __check_for_popups(self):
-        pass
+    def __check_for_shimmers(self):
+        for shimmer in self.find_elements_by_css_selector('#shimmers > .shimmer'):
+            shimmer.click()
 
     def __accept_cc(self):
         """
