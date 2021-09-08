@@ -12,8 +12,8 @@ from cookiebot.helpers import CookieMoneyHelper
 
 
 class CookieBot(Chrome):
-    upgrade_check_delta = 30
-    building_check_delta = 60  # 1 minute
+    upgrade_check_delta = 60 * 2
+    building_check_delta = 60 * 4
 
     def __init__(self, teardown=False, save_dir=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
