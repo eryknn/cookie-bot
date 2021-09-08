@@ -8,7 +8,7 @@ from selenium.webdriver import Chrome, ActionChains
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 
-from cookiebot.helpers import CookieMoneyHelper
+from cookiebot.helpers import CookieMoneyHelper, with_implicit_wait_disabled
 
 
 class CookieBot(Chrome):
@@ -49,6 +49,7 @@ class CookieBot(Chrome):
 
         logging.info("Finished running!")
 
+    @with_implicit_wait_disabled
     def __check_for_buildings(self):
         if datetime.now() < self.building_next_check:
             return
@@ -64,6 +65,7 @@ class CookieBot(Chrome):
 
         self.building_next_check = datetime.now() + timedelta(seconds=self.building_check_delta)
 
+    @with_implicit_wait_disabled
     def __check_for_upgrades(self):
         if datetime.now() < self.upgrade_next_check:
             return
@@ -80,6 +82,7 @@ class CookieBot(Chrome):
 
         self.upgrade_next_check = datetime.now() + timedelta(seconds=self.upgrade_check_delta)
 
+    @with_implicit_wait_disabled
     def __check_for_shimmers(self):
         for shimmer in self.find_elements_by_css_selector('#shimmers > .shimmer'):
             shimmer.click()

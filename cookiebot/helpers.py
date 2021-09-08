@@ -17,3 +17,11 @@ class CookieMoneyHelper:
             return int(val_list[0].replace('.', '')) * suffix_val
 
         return int(value.replace(',', ''))
+
+
+def with_implicit_wait_disabled(method_to_run):
+    def wrapper(self):
+        self.implicitly_wait(0)
+        method_to_run(self)
+        self.implicitly_wait(5)
+    return wrapper
