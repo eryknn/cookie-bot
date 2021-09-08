@@ -1,3 +1,4 @@
+import logging
 import os
 from datetime import datetime, timedelta
 
@@ -5,6 +6,8 @@ from selenium.common.exceptions import InvalidArgumentException, ElementClickInt
 from selenium.webdriver import Chrome, ActionChains
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
+
+from cookiebot.helpers import CookieMoneyHelper
 
 
 class CookieBot(Chrome):
@@ -43,7 +46,7 @@ class CookieBot(Chrome):
             self.__click_main_cookie()
             self.__check_for_save()
 
-        print("Finished running!")
+        logging.info("Finished running!")
 
     def __check_for_buildings(self):
         if datetime.now() < self.building_next_check:
@@ -52,7 +55,9 @@ class CookieBot(Chrome):
         # find the most expensive thing that can be bought and buy it, do it until there is no money left to buy
         while affordable_buildings := self.find_elements_by_css_selector('.product.unlocked.enabled'):
             affordable_buildings.sort(
-                key=lambda product: int(product.find_element_by_css_selector('span.price').text.replace(',', ''))
+                key=lambda product: CookieMoneyHelper.convert_string_value_to_int(
+                    product.find_element_by_css_selector('span.price').text
+                )
             )
             affordable_buildings[-1].click()
 
@@ -78,7 +83,7 @@ class CookieBot(Chrome):
                 except ElementClickInterceptedException:
                     continue
         except Exception:  # should never happen but who knows
-            print("Failed to accept cookies!")
+            logging.error("Failed to accept cookies!")
             raise
 
     def __load_save(self):
