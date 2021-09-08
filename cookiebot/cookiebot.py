@@ -8,6 +8,8 @@ from selenium.webdriver import Chrome, ActionChains
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 
+from cookiebot.helpers import CookieMoneyHelper
+
 
 class CookieBot(Chrome):
     upgrade_check_delta = 60 * 10  # 10 minutes
@@ -35,7 +37,6 @@ class CookieBot(Chrome):
         self.__accept_cc()
         self.__load_save()
         self.__initialize_elements()
-        self.__modify_options()
 
         self.running = True
 
@@ -55,7 +56,9 @@ class CookieBot(Chrome):
         # find the most expensive thing that can be bought and buy it, do it until there is no money left to buy
         while affordable_buildings := self.find_elements_by_css_selector('.product.unlocked.enabled'):
             affordable_buildings.sort(
-                key=lambda product: int(product.find_element_by_css_selector('span.price').text.replace(',', ''))
+                key=lambda product: CookieMoneyHelper.convert_string_value_to_int(
+                    product.find_element_by_css_selector('span.price').text
+                )
             )
             affordable_buildings[-1].click()
 
@@ -66,8 +69,9 @@ class CookieBot(Chrome):
             return
 
         # trigger jscript that shows whole upgrade list
+        upgrade_box = self.find_element_by_id('upgrades')
         ActionChains(self).move_to_element_with_offset(
-            self._upgrade_box, 0, int(self._upgrade_box.value_of_css_property('padding-top').split('px')[0])
+            upgrade_box, 0, int(upgrade_box.value_of_css_property('padding-top').split('px')[0])
         ).perform()
 
         while _ := self.find_elements_by_css_selector('.crate.upgrade.enabled'):
@@ -94,19 +98,6 @@ class CookieBot(Chrome):
         except Exception:  # should never happen but who knows
             logging.error("Failed to accept cookies!")
             raise
-
-    def __modify_options(self):
-        """
-        Modify all options that need modifying
-        """
-        # open options
-        self.find_element_by_id('prefsButton').click()
-
-        # disable price shortening
-        self.find_element_by_id('formatButton').click()
-
-        # close options menu
-        self.find_element_by_css_selector('#menu>.close.menuClose').click()
 
     def __load_save(self):
         latest_save_data = self.__get_latest_save_data()
@@ -139,7 +130,6 @@ class CookieBot(Chrome):
     def __initialize_elements(self):
         # find and save all elements that will be accessed and will not disappear and reappear
         self._main_cookie = self.find_element_by_id('bigCookie')
-        self._upgrade_box = self.find_element_by_id('upgrades')
 
     def __get_latest_save_data(self):
         # find latest save file if any
