@@ -83,7 +83,10 @@ class CookieBot(Chrome):
     @with_implicit_wait_disabled
     def __check_for_shimmers(self):
         for shimmer in self.find_elements_by_css_selector('#shimmers > .shimmer'):
-            shimmer.click()
+            try:
+                shimmer.click()
+            except Exception as e:
+                logging.warning('Exception Thrown while performing shimmer click %s', e.__class__.__name__)
 
     def __accept_cc(self):
         """
